@@ -21,54 +21,132 @@ Cisco IOS XE device
     +--> PASS / FAIL evidence
 ```
 
-## Goals
+## Current foundation
 
-- Use structured interfaces instead of screen-scraping CLI where practical.
-- Capture network state before and after a change.
-- Express expected state as data and validate it deterministically.
-- Detect configuration or operational drift.
-- Generate machine-readable evidence for each validation run.
-- Exercise failure paths and rollback behavior, not only successful changes.
-- Keep credentials and Cisco DevNet sandbox details out of version control.
-- Test the offline validation logic in CI without requiring a live Cisco device.
+The repository currently includes:
 
-## Planned Cisco integrations
+- normalized Python models for interfaces, routes, and device snapshots;
+- YAML-based expected-state policies;
+- deterministic validation with explicit PASS/FAIL results;
+- semantic pre/post state comparison;
+- JSON evidence/report generation;
+- a CLI for offline validation and diffing;
+- a read-only RESTCONF client for Cisco IOS XE;
+- pytest coverage and GitHub Actions CI;
+- environment-based credential handling.
 
-The live integration layer will be exercised against Cisco DevNet IOS XE sandboxes using technologies such as:
+No credentials are stored in the repository.
 
-- RESTCONF
-- NETCONF
-- YANG data models
-- pyATS / Genie
-- Cisco IOS XE
+## Cisco DevNet target
 
-Live-device features will be added only after they are verified against an available DevNet environment.
+The first live target is the **IOS XE on Catalyst 8000V Always-On** sandbox.
 
-## Initial milestones
+Default endpoint:
 
-1. **Offline validation core**
-   - typed network snapshots
-   - declarative validation policies
-   - semantic pre/post diff
-   - structured reports
-   - unit tests and CI
+```text
+Host: devnetsandboxiosxec8k.cisco.com
+RESTCONF: 443
+NETCONF: 830
+SSH: 22
+```
 
-2. **Read-only IOS XE integration**
-   - environment-based credentials
-   - connectivity checks
-   - interface and route collection
-   - baseline capture
+The sandbox generates unique credentials when a user launches a session. Put those credentials in local environment variables only.
 
-3. **Controlled change workflow**
-   - pre-change validation
-   - small reversible change
-   - post-change validation
-   - rollback and rollback verification
+```bash
+export CISCO_HOST=devnetsandboxiosxec8k.cisco.com
+export CISCO_USERNAME='...'
+export CISCO_PASSWORD='...'
+export CISCO_RESTCONF_PORT=443
+```
 
-4. **pyATS / Genie validation**
-   - operational-state learning
-   - pre/post comparison
-   - reusable network test cases
+Then install the project:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -e '.[dev]'
+```
+
+The first live check is intentionally read-only:
+
+```bash
+cisco-validate restconf-hello
+```
+
+It retrieves the hostname and IOS XE version through RESTCONF.
+
+A generic read-only GET is also available:
+
+```bash
+cisco-validate restconf-get \
+  --path Cisco-IOS-XE-native:native/interface
+```
+
+## Offline validation
+
+Run the included synthetic baseline against the expected-state policy:
+
+```bash
+cisco-validate validate \
+  --snapshot tests/fixtures/baseline.json \
+  --policy policies/lab_policy.yaml
+```
+
+Compare two normalized snapshots:
+
+```bash
+cisco-validate diff \
+  --before tests/fixtures/baseline.json \
+  --after tests/fixtures/changed.json
+```
+
+These offline paths are deliberately separate from device collection so validation logic can be tested in CI without network access.
+
+## Design principles
+
+- Prefer structured YANG-backed interfaces over screen-scraping CLI.
+- Keep collection, normalized state, policy, validation, and reporting separate.
+- Capture state before and after network changes.
+- Test negative/failure conditions, not only happy paths.
+- Fail closed when required configuration or credentials are missing.
+- Keep shared-sandbox work read-only until a change is explicitly safe.
+- Never commit credentials, private keys, tokens, or unredacted secrets.
+
+## Roadmap
+
+### 1. Offline validation core
+
+- [x] normalized network snapshots
+- [x] declarative validation policies
+- [x] semantic pre/post diff
+- [x] structured reports
+- [x] unit tests and CI
+
+### 2. Read-only IOS XE integration
+
+- [x] environment-based credentials
+- [x] generic RESTCONF GET support
+- [x] hostname/version smoke test
+- [ ] normalize real interface state
+- [ ] normalize real routing state
+- [ ] save live baseline snapshots
+
+### 3. Controlled change workflow
+
+This phase should use a private/reservable sandbox rather than the shared always-on device.
+
+- [ ] pre-change validation
+- [ ] small reversible change
+- [ ] post-change validation
+- [ ] rollback
+- [ ] rollback verification
+
+### 4. NETCONF and pyATS / Genie
+
+- [ ] NETCONF/YANG read-only collection
+- [ ] pyATS testbed integration
+- [ ] Genie operational-state learning
+- [ ] reusable change-validation test cases
 
 ## Security
 
@@ -82,7 +160,3 @@ Do not commit:
 - unredacted device configuration containing secrets
 
 Use environment variables and local untracked configuration instead.
-
-## Status
-
-Foundation in progress. The first implementation focuses on testable offline network-state validation so the repository remains useful even when a DevNet sandbox is not reserved.
