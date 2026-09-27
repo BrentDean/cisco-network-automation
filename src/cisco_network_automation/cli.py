@@ -6,6 +6,7 @@ import argparse
 import json
 from pathlib import Path
 
+from .collectors import capture_device_snapshot
 from .diff import semantic_diff
 from .io import load_policy, load_snapshot, write_json
 from .reporting import build_validation_report
@@ -40,6 +41,12 @@ def build_parser() -> argparse.ArgumentParser:
     get.add_argument("--path", required=True)
     get.add_argument("--output", type=Path)
 
+    snapshot = commands.add_parser(
+        "restconf-snapshot",
+        help="capture a normalized hostname/version/interface snapshot",
+    )
+    snapshot.add_argument("--output", type=Path)
+
     return parser
 
 
@@ -72,6 +79,8 @@ def main(argv: list[str] | None = None) -> int:
             "hostname": client.get_hostname(),
             "version": client.get_version(),
         }
+    elif args.command == "restconf-snapshot":
+        report = capture_device_snapshot(client).to_dict()
     else:
         report = client.get(args.path)
 

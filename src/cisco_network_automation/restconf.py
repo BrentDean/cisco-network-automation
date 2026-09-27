@@ -100,3 +100,6 @@ class RestconfClient:
 
     def get_version(self) -> dict[str, Any]:
         return self.get("Cisco-IOS-XE-native:native/version")
+
+    def get_interfaces_oper(self) -> dict[str, Any]:
+        return self.get("Cisco-IOS-XE-interfaces-oper:interfaces")
