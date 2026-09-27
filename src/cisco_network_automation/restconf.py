@@ -8,6 +8,7 @@ from typing import Any
 
 from requests import Session
 from requests.auth import HTTPBasicAuth
+
 YANG_JSON = "application/yang-data+json"
 YANG_PATCH_XML = "application/yang-patch+xml"
 DEMO_LOOPBACK = 250
