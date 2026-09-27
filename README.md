@@ -236,8 +236,22 @@ cisco-validate cross-check-interface --name GigabitEthernet1
 - [x] RESTCONF/NETCONF hostname cross-check
 - [x] operational interface normalization over NETCONF
 - [x] RESTCONF/NETCONF interface-state cross-check
-- [ ] pyATS testbed integration
-- [ ] Genie operational-state learning
+A public-safe pyATS testbed is included at `inventory/pyats_testbed.example.yaml`.
+It keeps credentials out of Git by resolving them from environment variables.
+
+```bash
+export PYATS_USERNAME=developer
+read -r -s -p "pyATS device password: " PYATS_PASSWORD
+echo
+export PYATS_PASSWORD
+
+pip install -e '.[pyats]'
+pyats validate testbed inventory/pyats_testbed.example.yaml
+```
+
+- [x] public-safe pyATS testbed definition
+- [ ] live pyATS/Unicon SSH connection
+- [ ] Genie operational-state parsing
 - [ ] reusable change-validation test cases
 
 ## Security

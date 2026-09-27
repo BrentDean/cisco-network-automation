@@ -19,6 +19,9 @@ dev = [
   "pytest>=8.0",
   "ruff>=0.6",
 ]
+pyats = [
+  "pyats[library]>=26.8,<26.9",
+]
 
 [project.scripts]
 cisco-validate = "cisco_network_automation.cli:main"
