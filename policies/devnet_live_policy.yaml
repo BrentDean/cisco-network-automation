@@ -1,0 +1,14 @@
+hostname: Cat8kv
+interfaces:
+  - name: GigabitEthernet1
+    admin_up: true
+    oper_up: true
+    ipv4: 10.10.20.148/24
+routes:
+  - prefix: 0.0.0.0/0
+    present: true
+    next_hop: 10.10.20.254
+    protocol: static
+  - prefix: 10.10.20.0/24
+    present: true
+    protocol: direct
