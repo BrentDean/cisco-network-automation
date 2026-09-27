@@ -29,7 +29,7 @@ def normalize_genie_ip_interface_brief(
 
     item = interfaces.get(name)
     if not isinstance(item, dict):
-        raise ValueError(f"Genie output did not contain interface {name!r}")
+        raise TypeError(f"Genie output did not contain interface mapping for {name!r}")
 
     address = item.get("ip_address")
     ipv4_address = (
