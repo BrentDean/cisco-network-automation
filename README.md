@@ -226,12 +226,16 @@ Keep host-key verification enabled by default outside disposable lab sessions.
 ```bash
 cisco-validate netconf-hello
 cisco-validate netconf-hostname
+cisco-validate netconf-interface --name GigabitEthernet1
 cisco-validate cross-check-hostname
+cisco-validate cross-check-interface --name GigabitEthernet1
 ```
 
 - [x] NETCONF/YANG read-only connection
 - [x] native hostname retrieval from running config
 - [x] RESTCONF/NETCONF hostname cross-check
+- [x] operational interface normalization over NETCONF
+- [x] RESTCONF/NETCONF interface-state cross-check
 - [ ] pyATS testbed integration
 - [ ] Genie operational-state learning
 - [ ] reusable change-validation test cases

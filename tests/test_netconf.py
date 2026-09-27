@@ -6,7 +6,23 @@ from cisco_network_automation.netconf import (
     HOSTNAME_FILTER,
     NetconfClient,
     NetconfSettings,
+    parse_interface_oper_xml,
 )
+
+INTERFACE_XML = """<?xml version="1.0" encoding="UTF-8"?>
+<data xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
+  <interfaces xmlns="http://cisco.com/ns/yang/Cisco-IOS-XE-interfaces-oper">
+    <interface>
+      <name>GigabitEthernet1</name>
+      <admin-status>if-state-up</admin-status>
+      <oper-status>if-oper-state-ready</oper-status>
+      <ipv4>10.10.20.48</ipv4>
+      <ipv4-subnet-mask>255.255.255.0</ipv4-subnet-mask>
+      <description>MANAGEMENT INTERFACE - DON'T TOUCH ME</description>
+    </interface>
+  </interfaces>
+</data>
+"""
 
 
 class FakeConnection:
@@ -18,6 +34,7 @@ class FakeConnection:
         ]
         self.session_id = 42
         self.get_config_calls = []
+        self.get_calls = []
 
     def __enter__(self):
         return self
@@ -35,6 +52,10 @@ class FakeConnection:
                 "</native></data>"
             )
         )
+
+    def get(self, *, filter):
+        self.get_calls.append(filter)
+        return SimpleNamespace(data_xml=INTERFACE_XML)
 
 
 class FakeConnect:
@@ -85,9 +106,30 @@ def test_netconf_hostname_uses_running_subtree_filter():
     assert client.get_hostname() == "cat8000v"
 
     connection = connect.connections[0]
-    assert connection.get_config_calls == [
-        ("running", ("subtree", HOSTNAME_FILTER))
-    ]
+    assert connection.get_config_calls == [("running", ("subtree", HOSTNAME_FILTER))]
+
+
+def test_parse_live_interface_xml_shape():
+    state = parse_interface_oper_xml(INTERFACE_XML)
+
+    assert state.name == "GigabitEthernet1"
+    assert state.admin_up is True
+    assert state.oper_up is True
+    assert state.ipv4 == "10.10.20.48/24"
+    assert state.description == "MANAGEMENT INTERFACE - DON'T TOUCH ME"
+
+
+def test_netconf_interface_uses_operational_subtree_filter():
+    connect = FakeConnect()
+    client = NetconfClient(settings(), connect=connect)
+
+    state = client.get_interface_state("GigabitEthernet1")
+
+    assert state.ipv4 == "10.10.20.48/24"
+    filter_type, filter_xml = connect.connections[0].get_calls[0]
+    assert filter_type == "subtree"
+    assert "<name>GigabitEthernet1</name>" in filter_xml
+    assert "Cisco-IOS-XE-interfaces-oper" in filter_xml
 
 
 def test_netconf_settings_fail_closed_for_missing_credentials(monkeypatch):
