@@ -1,10 +1,10 @@
 from cisco_network_automation.restconf import (
     DEMO_DESCRIPTION,
     DEMO_LOOPBACK,
-    RestconfClient,
-    RestconfSettings,
     YANG_JSON,
     YANG_PATCH_XML,
+    RestconfClient,
+    RestconfSettings,
 )
 
 
@@ -35,7 +35,7 @@ class FakeSession:
 
 
 def settings(**kwargs):
-    values = dict(host="10.10.20.48", username="developer", password="test")
+    values = {"host": "10.10.20.48", "username": "developer", "password": "test"}
     values.update(kwargs)
     return RestconfSettings(**values)
 
