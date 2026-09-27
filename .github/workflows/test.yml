@@ -16,6 +16,14 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
+      - name: Verify Python files are not executable in Git
+        run: |
+          bad_files="$(git ls-files --stage '*.py' | awk '$1 == "100755" {print $4}')"
+          if [ -n "$bad_files" ]; then
+            echo "Python files unexpectedly executable in Git:"
+            echo "$bad_files"
+            exit 1
+          fi
       - run: python -m pip install --upgrade pip
       - run: pip install -e '.[dev]'
       - run: ruff check .
