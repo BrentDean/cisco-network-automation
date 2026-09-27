@@ -57,7 +57,16 @@ export CISCO_HOST=devnetsandboxiosxec8k.cisco.com
 export CISCO_USERNAME='...'
 export CISCO_PASSWORD='...'
 export CISCO_RESTCONF_PORT=443
+export CISCO_VERIFY_TLS=true
 ```
+
+The Catalyst 8000V sandbox may present a self-signed HTTPS certificate. Keep TLS verification enabled by default. For this disposable DevNet sandbox only, explicitly disable certificate verification for the session if the local trust store rejects the sandbox certificate:
+
+```bash
+export CISCO_VERIFY_TLS=false
+```
+
+Do not make disabled certificate verification the project default or reuse that setting for production devices.
 
 Then install the project:
 
