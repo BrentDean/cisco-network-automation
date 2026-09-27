@@ -5,10 +5,11 @@ from __future__ import annotations
 from ipaddress import IPv4Network
 from typing import Any
 
-from .models import DeviceSnapshot, InterfaceState
+from .models import DeviceSnapshot, InterfaceState, RouteState
 from .restconf import RestconfClient
 
 INTERFACES_OPER_KEY = "Cisco-IOS-XE-interfaces-oper:interfaces"
+ROUTING_INSTANCE_KEY = "ietf-routing:routing-instance"
 HOSTNAME_KEY = "Cisco-IOS-XE-native:hostname"
 VERSION_KEY = "Cisco-IOS-XE-native:version"
 
@@ -75,24 +76,106 @@ def normalize_interfaces_oper(payload: dict[str, Any]) -> tuple[InterfaceState, 
     return tuple(normalized)
 
 
+def _normalized_protocol(value: Any) -> str | None:
+    if not isinstance(value, str) or not value:
+        return None
+    return value.rsplit(":", 1)[-1]
+
+
+def _route_next_hop(route: dict[str, Any]) -> str | None:
+    next_hop = route.get("next-hop")
+    if not isinstance(next_hop, dict):
+        return None
+
+    address = next_hop.get("next-hop-address")
+    if isinstance(address, str) and address not in {"", "0.0.0.0", "::"}:
+        return address
+
+    extension_hops = next_hop.get("cisco-xe-ietf-routing-ext:next-hop-list")
+    if isinstance(extension_hops, list):
+        for hop in extension_hops:
+            if not isinstance(hop, dict):
+                continue
+            address = hop.get("next-hop-address")
+            if isinstance(address, str) and address not in {"", "0.0.0.0", "::"}:
+                return address
+
+    return None
+
+
+def normalize_routing_state(payload: dict[str, Any]) -> tuple[RouteState, ...]:
+    """Normalize IETF routing-state RIB entries into deterministic route state."""
+    instances = payload.get(ROUTING_INSTANCE_KEY)
+    if not isinstance(instances, list):
+        raise TypeError(f"RESTCONF response is missing {ROUTING_INSTANCE_KEY!r}")
+
+    normalized: list[RouteState] = []
+    for instance in instances:
+        if not isinstance(instance, dict):
+            raise TypeError("routing-instance entries must be JSON objects")
+
+        ribs_container = instance.get("ribs", {})
+        if not isinstance(ribs_container, dict):
+            raise TypeError("routing-instance ribs field must be a JSON object")
+
+        ribs = ribs_container.get("rib", [])
+        if not isinstance(ribs, list):
+            raise TypeError("routing-instance ribs.rib field must be a list")
+
+        for rib in ribs:
+            if not isinstance(rib, dict):
+                raise TypeError("rib entries must be JSON objects")
+
+            routes_container = rib.get("routes", {})
+            if not isinstance(routes_container, dict):
+                raise TypeError("rib routes field must be a JSON object")
+
+            routes = routes_container.get("route", [])
+            if not isinstance(routes, list):
+                raise TypeError("rib routes.route field must be a list")
+
+            for route in routes:
+                if not isinstance(route, dict):
+                    raise TypeError("route entries must be JSON objects")
+
+                prefix = route.get("destination-prefix")
+                if not isinstance(prefix, str) or not prefix:
+                    raise ValueError("route entry is missing destination-prefix")
+
+                normalized.append(
+                    RouteState(
+                        prefix=prefix,
+                        next_hop=_route_next_hop(route),
+                        protocol=_normalized_protocol(route.get("source-protocol")),
+                    )
+                )
+
+    return tuple(normalized)
+
+
 def build_device_snapshot(
     hostname_payload: dict[str, Any],
     version_payload: dict[str, Any],
     interfaces_payload: dict[str, Any],
+    routing_payload: dict[str, Any],
 ) -> DeviceSnapshot:
-    """Build a normalized snapshot from the first live RESTCONF collection set."""
+    """Build a normalized snapshot from live read-only RESTCONF collection."""
     hostname = _scalar(hostname_payload, HOSTNAME_KEY)
     version = _scalar(version_payload, VERSION_KEY)
     interfaces = normalize_interfaces_oper(interfaces_payload)
+    routes = normalize_routing_state(routing_payload)
 
     return DeviceSnapshot(
         hostname=hostname,
         interfaces=interfaces,
+        routes=routes,
         metadata={
             "source": "restconf",
             "ios_xe_version": version,
             "interface_model": INTERFACES_OPER_KEY,
             "interface_count": len(interfaces),
+            "routing_model": ROUTING_INSTANCE_KEY,
+            "route_count": len(routes),
         },
     )
 
@@ -103,4 +186,5 @@ def capture_device_snapshot(client: RestconfClient) -> DeviceSnapshot:
         client.get_hostname(),
         client.get_version(),
         client.get_interfaces_oper(),
+        client.get_routing_state(),
     )
