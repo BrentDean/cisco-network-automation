@@ -59,7 +59,7 @@ def test_build_device_snapshot_records_live_collection_metadata():
 
 
 def test_normalize_interfaces_rejects_missing_container():
-    with pytest.raises(ValueError, match="interfaces-oper"):
+    with pytest.raises(TypeError, match="interfaces-oper"):
         normalize_interfaces_oper({})
 
 
