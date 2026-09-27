@@ -4,15 +4,18 @@ from __future__ import annotations
 
 import argparse
 import json
+from dataclasses import asdict
 from pathlib import Path
 
-from .collectors import capture_device_snapshot
+from .collectors import capture_device_snapshot, normalize_interfaces_oper
 from .diff import semantic_diff
 from .io import load_policy, load_snapshot, write_json
 from .netconf import NetconfClient, NetconfSettings
 from .reporting import build_validation_report
 from .restconf import RestconfClient, RestconfSettings
 from .validation import validate_snapshot
+
+CROSS_CHECK_INTERFACE = "GigabitEthernet1"
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -45,8 +48,16 @@ def build_parser() -> argparse.ArgumentParser:
     netconf_hostname = commands.add_parser("netconf-hostname")
     netconf_hostname.add_argument("--output", type=Path)
 
+    netconf_interface = commands.add_parser("netconf-interface")
+    netconf_interface.add_argument("--name", default=CROSS_CHECK_INTERFACE)
+    netconf_interface.add_argument("--output", type=Path)
+
     cross_check = commands.add_parser("cross-check-hostname")
     cross_check.add_argument("--output", type=Path)
+
+    cross_check_interface = commands.add_parser("cross-check-interface")
+    cross_check_interface.add_argument("--name", default=CROSS_CHECK_INTERFACE)
+    cross_check_interface.add_argument("--output", type=Path)
 
     commands.add_parser("restconf-create-demo-loopback")
     commands.add_parser("restconf-delete-demo-loopback")
@@ -59,6 +70,14 @@ def _restconf_hostname(client: RestconfClient) -> str:
     if not isinstance(hostname, str) or not hostname:
         raise ValueError("RESTCONF hostname response is missing expected value")
     return hostname
+
+
+def _restconf_interface(client: RestconfClient, name: str):
+    interfaces = normalize_interfaces_oper(client.get_interfaces_oper())
+    for interface in interfaces:
+        if interface.name == name:
+            return interface
+    raise ValueError(f"RESTCONF response did not contain interface {name!r}")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -80,14 +99,26 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(report, indent=2))
         return 0
 
-    if args.command in {"netconf-hello", "netconf-hostname", "cross-check-hostname"}:
+    netconf_commands = {
+        "netconf-hello",
+        "netconf-hostname",
+        "netconf-interface",
+        "cross-check-hostname",
+        "cross-check-interface",
+    }
+    if args.command in netconf_commands:
         netconf = NetconfClient(NetconfSettings.from_env())
 
         if args.command == "netconf-hello":
             report = netconf.hello()
         elif args.command == "netconf-hostname":
             report = {"protocol": "netconf", "hostname": netconf.get_hostname()}
-        else:
+        elif args.command == "netconf-interface":
+            report = {
+                "protocol": "netconf",
+                "interface": asdict(netconf.get_interface_state(args.name)),
+            }
+        elif args.command == "cross-check-hostname":
             restconf = RestconfClient(RestconfSettings.from_env())
             netconf_hostname = netconf.get_hostname()
             restconf_hostname = _restconf_hostname(restconf)
@@ -96,6 +127,18 @@ def main(argv: list[str] | None = None) -> int:
                 "netconf_hostname": netconf_hostname,
                 "restconf_hostname": restconf_hostname,
                 "match": netconf_hostname == restconf_hostname,
+            }
+        else:
+            restconf = RestconfClient(RestconfSettings.from_env())
+            netconf_state = netconf.get_interface_state(args.name)
+            restconf_state = _restconf_interface(restconf, args.name)
+            matches = netconf_state == restconf_state
+            report = {
+                "result": "PASS" if matches else "FAIL",
+                "interface": args.name,
+                "netconf": asdict(netconf_state),
+                "restconf": asdict(restconf_state),
+                "match": matches,
             }
 
         if args.output:

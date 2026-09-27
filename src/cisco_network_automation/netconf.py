@@ -4,12 +4,16 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
+from ipaddress import IPv4Network
 from typing import Any
 from xml.etree import ElementTree
 
 from ncclient import manager
 
+from .models import InterfaceState
+
 NATIVE_NS = "http://cisco.com/ns/yang/Cisco-IOS-XE-native"
+INTERFACES_OPER_NS = "http://cisco.com/ns/yang/Cisco-IOS-XE-interfaces-oper"
 HOSTNAME_FILTER = f'<native xmlns="{NATIVE_NS}"><hostname/></native>'
 
 
@@ -25,6 +29,51 @@ def _env_bool(name: str, default: bool) -> bool:
         return False
 
     raise RuntimeError(f"{name} must be one of: true/false, 1/0, yes/no, on/off")
+
+
+def _text(parent: ElementTree.Element, name: str) -> str | None:
+    element = parent.find(f"{{{INTERFACES_OPER_NS}}}{name}")
+    if element is None or element.text is None:
+        return None
+    value = element.text.strip()
+    return value or None
+
+
+def _ipv4_cidr(address: str | None, mask: str | None) -> str | None:
+    if not address or not mask or address == "0.0.0.0" or mask == "0.0.0.0":
+        return None
+    try:
+        prefix = IPv4Network(f"0.0.0.0/{mask}").prefixlen
+    except ValueError as exc:
+        raise ValueError(f"invalid NETCONF IPv4 subnet mask {mask!r}") from exc
+    return f"{address}/{prefix}"
+
+
+def parse_interface_oper_xml(xml: str) -> InterfaceState:
+    """Normalize one IOS XE interfaces-oper NETCONF response."""
+    root = ElementTree.fromstring(xml)
+    interface = root.find(f".//{{{INTERFACES_OPER_NS}}}interface")
+    if interface is None:
+        raise ValueError("NETCONF response did not contain an operational interface")
+
+    name = _text(interface, "name")
+    if not name:
+        raise ValueError("NETCONF interface response is missing name")
+
+    description = _text(interface, "description")
+    return InterfaceState(
+        name=name,
+        admin_up=_text(interface, "admin-status") == "if-state-up",
+        oper_up=_text(interface, "oper-status") in {
+            "if-oper-state-ready",
+            "if-oper-state-up",
+        },
+        ipv4=_ipv4_cidr(
+            _text(interface, "ipv4"),
+            _text(interface, "ipv4-subnet-mask"),
+        ),
+        description=description,
+    )
 
 
 @dataclass(frozen=True)
@@ -99,3 +148,18 @@ class NetconfClient:
         if hostname is None or hostname.text is None or not hostname.text.strip():
             raise ValueError("NETCONF response did not contain Cisco IOS XE native hostname")
         return hostname.text.strip()
+
+    def get_interface_state(self, name: str) -> InterfaceState:
+        filter_xml = (
+            f'<interfaces xmlns="{INTERFACES_OPER_NS}">'
+            f"<interface><name>{name}</name></interface>"
+            "</interfaces>"
+        )
+        with self._connect(**self._connection_args()) as connection:
+            reply = connection.get(filter=("subtree", filter_xml))
+        state = parse_interface_oper_xml(reply.data_xml)
+        if state.name != name:
+            raise ValueError(
+                f"NETCONF returned interface {state.name!r} while {name!r} was requested"
+            )
+        return state
