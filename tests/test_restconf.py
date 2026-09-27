@@ -1,7 +1,7 @@
 from cisco_network_automation.restconf import (
+    YANG_JSON,
     RestconfClient,
     RestconfSettings,
-    YANG_JSON,
 )
 
 

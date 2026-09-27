@@ -18,7 +18,7 @@ def load_snapshot(path: str | Path) -> DeviceSnapshot:
 def load_policy(path: str | Path) -> dict[str, Any]:
     payload = yaml.safe_load(Path(path).read_text(encoding="utf-8"))
     if not isinstance(payload, dict):
-        raise ValueError("policy must contain a YAML mapping at the top level")
+        raise TypeError("policy must contain a YAML mapping at the top level")
     return payload
 
 

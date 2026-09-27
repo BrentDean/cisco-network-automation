@@ -6,7 +6,7 @@ import os
 from dataclasses import dataclass
 from typing import Any
 
-import requests
+from requests import Session
 from requests.auth import HTTPBasicAuth
 
 
@@ -23,7 +23,7 @@ class RestconfSettings:
     timeout_seconds: float = 15.0
 
     @classmethod
-    def from_env(cls) -> "RestconfSettings":
+    def from_env(cls) -> RestconfSettings:
         host = os.getenv("CISCO_HOST", "").strip()
         username = os.getenv("CISCO_USERNAME", "").strip()
         password = os.getenv("CISCO_PASSWORD", "")
@@ -42,10 +42,10 @@ class RestconfClient:
         self,
         settings: RestconfSettings,
         *,
-        session: requests.Session | None = None,
+        session: Session | None = None,
     ) -> None:
         self.settings = settings
-        self.session = session or requests.Session()
+        self.session = session or Session()
 
     @property
     def base_url(self) -> str:
@@ -69,7 +69,7 @@ class RestconfClient:
         response.raise_for_status()
         payload = response.json()
         if not isinstance(payload, dict):
-            raise ValueError("RESTCONF response must be a JSON object")
+            raise TypeError("RESTCONF response must be a JSON object")
         return payload
 
     def get_hostname(self) -> dict[str, Any]:

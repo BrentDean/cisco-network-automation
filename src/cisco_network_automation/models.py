@@ -15,7 +15,7 @@ class InterfaceState:
     description: str | None = None
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "InterfaceState":
+    def from_dict(cls, data: dict[str, Any]) -> InterfaceState:
         return cls(
             name=str(data["name"]),
             admin_up=bool(data["admin_up"]),
@@ -32,7 +32,7 @@ class RouteState:
     protocol: str | None = None
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "RouteState":
+    def from_dict(cls, data: dict[str, Any]) -> RouteState:
         return cls(
             prefix=str(data["prefix"]),
             next_hop=data.get("next_hop"),
@@ -48,7 +48,7 @@ class DeviceSnapshot:
     metadata: dict[str, Any] = field(default_factory=dict)
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "DeviceSnapshot":
+    def from_dict(cls, data: dict[str, Any]) -> DeviceSnapshot:
         return cls(
             hostname=str(data["hostname"]),
             interfaces=tuple(
