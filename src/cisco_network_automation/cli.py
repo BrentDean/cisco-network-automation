@@ -1,4 +1,4 @@
-"""CLI for offline validation and read-only IOS XE RESTCONF access."""
+"""CLI for Cisco IOS XE state validation and guarded RESTCONF demo changes."""
 
 from __future__ import annotations
 
@@ -28,25 +28,18 @@ def build_parser() -> argparse.ArgumentParser:
     diff.add_argument("--after", required=True, type=Path)
     diff.add_argument("--output", type=Path)
 
-    hello = commands.add_parser(
-        "restconf-hello",
-        help="read hostname and IOS XE version using RESTCONF",
-    )
+    hello = commands.add_parser("restconf-hello")
     hello.add_argument("--output", type=Path)
 
-    get = commands.add_parser(
-        "restconf-get",
-        help="perform a read-only RESTCONF GET",
-    )
+    get = commands.add_parser("restconf-get")
     get.add_argument("--path", required=True)
     get.add_argument("--output", type=Path)
 
-    snapshot = commands.add_parser(
-        "restconf-snapshot",
-        help="capture a normalized hostname/version/interface snapshot",
-    )
+    snapshot = commands.add_parser("restconf-snapshot")
     snapshot.add_argument("--output", type=Path)
 
+    commands.add_parser("restconf-create-demo-loopback")
+    commands.add_parser("restconf-delete-demo-loopback")
     return parser
 
 
@@ -63,10 +56,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0 if report["result"] == "PASS" else 1
 
     if args.command == "diff":
-        report = semantic_diff(
-            load_snapshot(args.before),
-            load_snapshot(args.after),
-        )
+        report = semantic_diff(load_snapshot(args.before), load_snapshot(args.after))
         if args.output:
             write_json(args.output, report)
         print(json.dumps(report, indent=2))
@@ -75,16 +65,17 @@ def main(argv: list[str] | None = None) -> int:
     client = RestconfClient(RestconfSettings.from_env())
 
     if args.command == "restconf-hello":
-        report = {
-            "hostname": client.get_hostname(),
-            "version": client.get_version(),
-        }
+        report = {"hostname": client.get_hostname(), "version": client.get_version()}
     elif args.command == "restconf-snapshot":
         report = capture_device_snapshot(client).to_dict()
+    elif args.command == "restconf-create-demo-loopback":
+        report = client.create_demo_loopback()
+    elif args.command == "restconf-delete-demo-loopback":
+        report = client.delete_demo_loopback()
     else:
         report = client.get(args.path)
 
-    if args.output:
+    if getattr(args, "output", None):
         write_json(args.output, report)
     print(json.dumps(report, indent=2))
     return 0
