@@ -26,12 +26,13 @@ Cisco IOS XE device
 The repository currently includes:
 
 - normalized Python models for interfaces, routes, and device snapshots;
+- read-only RESTCONF and NETCONF clients for Cisco IOS XE;
 - YAML-based expected-state policies;
 - deterministic validation with explicit PASS/FAIL results;
 - semantic pre/post state comparison;
 - JSON evidence/report generation;
 - a CLI for offline validation and diffing;
-- a read-only RESTCONF client for Cisco IOS XE;
+- cross-protocol hostname validation between RESTCONF and NETCONF;
 - pytest coverage and GitHub Actions CI;
 - environment-based credential handling.
 
@@ -211,7 +212,26 @@ then verified full baseline restoration after rollback.
 
 ### 4. NETCONF and pyATS / Genie
 
-- [ ] NETCONF/YANG read-only collection
+The NETCONF client uses the IOS XE device handler in `ncclient`, port 830,
+and a running-datastore subtree filter against the native IOS XE hostname.
+
+For disposable DevNet labs where the SSH host key is not trusted locally:
+
+```bash
+export CISCO_NETCONF_HOSTKEY_VERIFY=false
+```
+
+Keep host-key verification enabled by default outside disposable lab sessions.
+
+```bash
+cisco-validate netconf-hello
+cisco-validate netconf-hostname
+cisco-validate cross-check-hostname
+```
+
+- [x] NETCONF/YANG read-only connection
+- [x] native hostname retrieval from running config
+- [x] RESTCONF/NETCONF hostname cross-check
 - [ ] pyATS testbed integration
 - [ ] Genie operational-state learning
 - [ ] reusable change-validation test cases
