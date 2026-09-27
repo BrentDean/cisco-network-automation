@@ -110,5 +110,5 @@ def test_common_from_model_removes_prefix_length():
 
 
 def test_normalize_genie_rejects_missing_interface():
-    with pytest.raises(ValueError, match="did not contain interface"):
+    with pytest.raises(TypeError, match="did not contain interface mapping"):
         normalize_genie_ip_interface_brief(PARSED, "Loopback250")
