@@ -43,7 +43,7 @@ def normalize_interfaces_oper(payload: dict[str, Any]) -> tuple[InterfaceState, 
     """Normalize IOS XE interfaces-oper data into deterministic interface state."""
     container = payload.get(INTERFACES_OPER_KEY)
     if not isinstance(container, dict):
-        raise ValueError(f"RESTCONF response is missing {INTERFACES_OPER_KEY!r}")
+        raise TypeError(f"RESTCONF response is missing {INTERFACES_OPER_KEY!r}")
 
     raw_interfaces = container.get("interface", [])
     if not isinstance(raw_interfaces, list):
