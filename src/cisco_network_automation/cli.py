@@ -1,4 +1,4 @@
-"""CLI for Cisco IOS XE state validation and guarded RESTCONF demo changes."""
+"""CLI for Cisco IOS XE state validation and guarded automation."""
 
 from __future__ import annotations
 
@@ -9,6 +9,7 @@ from pathlib import Path
 from .collectors import capture_device_snapshot
 from .diff import semantic_diff
 from .io import load_policy, load_snapshot, write_json
+from .netconf import NetconfClient, NetconfSettings
 from .reporting import build_validation_report
 from .restconf import RestconfClient, RestconfSettings
 from .validation import validate_snapshot
@@ -38,9 +39,26 @@ def build_parser() -> argparse.ArgumentParser:
     snapshot = commands.add_parser("restconf-snapshot")
     snapshot.add_argument("--output", type=Path)
 
+    netconf_hello = commands.add_parser("netconf-hello")
+    netconf_hello.add_argument("--output", type=Path)
+
+    netconf_hostname = commands.add_parser("netconf-hostname")
+    netconf_hostname.add_argument("--output", type=Path)
+
+    cross_check = commands.add_parser("cross-check-hostname")
+    cross_check.add_argument("--output", type=Path)
+
     commands.add_parser("restconf-create-demo-loopback")
     commands.add_parser("restconf-delete-demo-loopback")
     return parser
+
+
+def _restconf_hostname(client: RestconfClient) -> str:
+    payload = client.get_hostname()
+    hostname = payload.get("Cisco-IOS-XE-native:hostname")
+    if not isinstance(hostname, str) or not hostname:
+        raise ValueError("RESTCONF hostname response is missing expected value")
+    return hostname
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -61,6 +79,29 @@ def main(argv: list[str] | None = None) -> int:
             write_json(args.output, report)
         print(json.dumps(report, indent=2))
         return 0
+
+    if args.command in {"netconf-hello", "netconf-hostname", "cross-check-hostname"}:
+        netconf = NetconfClient(NetconfSettings.from_env())
+
+        if args.command == "netconf-hello":
+            report = netconf.hello()
+        elif args.command == "netconf-hostname":
+            report = {"protocol": "netconf", "hostname": netconf.get_hostname()}
+        else:
+            restconf = RestconfClient(RestconfSettings.from_env())
+            netconf_hostname = netconf.get_hostname()
+            restconf_hostname = _restconf_hostname(restconf)
+            report = {
+                "result": "PASS" if netconf_hostname == restconf_hostname else "FAIL",
+                "netconf_hostname": netconf_hostname,
+                "restconf_hostname": restconf_hostname,
+                "match": netconf_hostname == restconf_hostname,
+            }
+
+        if args.output:
+            write_json(args.output, report)
+        print(json.dumps(report, indent=2))
+        return 0 if report.get("result", "PASS") == "PASS" else 1
 
     client = RestconfClient(RestconfSettings.from_env())
 

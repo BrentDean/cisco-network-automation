@@ -9,6 +9,7 @@ description = "Cisco IOS XE network state validation and change-safety automatio
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+  "ncclient>=0.6.15",
   "PyYAML>=6.0",
   "requests>=2.32",
 ]
