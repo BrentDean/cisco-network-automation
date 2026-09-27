@@ -103,3 +103,6 @@ class RestconfClient:
 
     def get_interfaces_oper(self) -> dict[str, Any]:
         return self.get("Cisco-IOS-XE-interfaces-oper:interfaces")
+
+    def get_routing_state(self) -> dict[str, Any]:
+        return self.get("ietf-routing:routing-state/routing-instance")
