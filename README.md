@@ -188,10 +188,26 @@ cisco-validate restconf-delete-demo-loopback
 ```
 
 - [x] pre-change validation
-- [ ] small reversible change
-- [ ] post-change validation
-- [ ] rollback
-- [ ] rollback verification
+- [x] small reversible change
+- [x] post-change validation
+- [x] rollback
+- [x] rollback verification
+
+Observed private-sandbox workflow:
+
+```text
+baseline capture
+  -> guarded RESTCONF create of Loopback250
+  -> read-after-write verification
+  -> semantic diff: 2 intended changes
+  -> policy validation: 18/18 checks passed
+  -> guarded RESTCONF delete
+  -> read-after-delete verification
+  -> semantic diff against original baseline: 0 changes
+```
+
+The semantic diff isolated exactly the intended interface and direct-route additions,
+then verified full baseline restoration after rollback.
 
 ### 4. NETCONF and pyATS / Genie
 
