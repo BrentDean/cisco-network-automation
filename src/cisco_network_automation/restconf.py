@@ -12,6 +12,22 @@ from requests.auth import HTTPBasicAuth
 YANG_JSON = "application/yang-data+json"
 
 
+def _env_bool(name: str, default: bool) -> bool:
+    raw = os.getenv(name)
+    if raw is None:
+        return default
+
+    value = raw.strip().lower()
+    if value in {"1", "true", "yes", "on"}:
+        return True
+    if value in {"0", "false", "no", "off"}:
+        return False
+
+    raise RuntimeError(
+        f"{name} must be one of: true/false, 1/0, yes/no, on/off"
+    )
+
+
 @dataclass(frozen=True)
 class RestconfSettings:
     host: str
@@ -30,12 +46,20 @@ class RestconfSettings:
             raise RuntimeError(
                 "CISCO_HOST, CISCO_USERNAME, and CISCO_PASSWORD must be set"
             )
+
         port = int(os.getenv("CISCO_RESTCONF_PORT", "443"))
-        return cls(host=host, username=username, password=password, port=port)
+        verify_tls = _env_bool("CISCO_VERIFY_TLS", True)
+        return cls(
+            host=host,
+            username=username,
+            password=password,
+            port=port,
+            verify_tls=verify_tls,
+        )
 
 
 class RestconfClient:
-    """Small RESTCONF GET client with explicit timeouts and TLS verification."""
+    """Small RESTCONF GET client with explicit timeouts and TLS policy."""
 
     def __init__(
         self,
