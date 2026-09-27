@@ -88,8 +88,26 @@ A generic read-only GET is also available:
 
 ```bash
 cisco-validate restconf-get \
-  --path Cisco-IOS-XE-native:native/interface
+  --path Cisco-IOS-XE-interfaces-oper:interfaces
 ```
+
+Capture a normalized live baseline containing hostname, IOS XE version, and
+operational interface state:
+
+```bash
+mkdir -p reports/live
+
+cisco-validate restconf-snapshot \
+  --output reports/live/baseline.json
+```
+
+The collector converts IOS XE operational fields into the project's stable
+snapshot model, including:
+
+- `admin-status` → `admin_up`;
+- `oper-status` → `oper_up`;
+- IPv4 address + subnet mask → CIDR notation;
+- empty or `0.0.0.0` addressing → no configured IPv4 address.
 
 ## Offline validation
 
@@ -136,9 +154,9 @@ These offline paths are deliberately separate from device collection so validati
 - [x] environment-based credentials
 - [x] generic RESTCONF GET support
 - [x] hostname/version smoke test
-- [ ] normalize real interface state
+- [x] normalize real interface state
 - [ ] normalize real routing state
-- [ ] save live baseline snapshots
+- [x] save live interface baseline snapshots
 
 ### 3. Controlled change workflow
 
