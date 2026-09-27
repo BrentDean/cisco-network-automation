@@ -168,9 +168,26 @@ These offline paths are deliberately separate from device collection so validati
 
 ### 3. Controlled change workflow
 
-This phase should use a private/reservable sandbox rather than the shared always-on device.
+This phase uses a private/reservable sandbox rather than the shared always-on device.
 
-- [ ] pre-change validation
+The demo write path is deliberately narrow:
+
+- only `Loopback250` is managed;
+- the address is fixed at `192.0.2.250/32`;
+- the description is fixed at `portfolio-change-validation`;
+- writes are disabled unless `CISCO_ALLOW_WRITES=true`;
+- creation refuses to overwrite an existing Loopback250;
+- deletion refuses to remove Loopback250 unless its description proves it was created by this demo;
+- each create/delete operation performs a read-after-write verification.
+
+```bash
+export CISCO_ALLOW_WRITES=true
+
+cisco-validate restconf-create-demo-loopback
+cisco-validate restconf-delete-demo-loopback
+```
+
+- [x] pre-change validation
 - [ ] small reversible change
 - [ ] post-change validation
 - [ ] rollback
