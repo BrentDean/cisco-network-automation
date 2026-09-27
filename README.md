@@ -91,8 +91,8 @@ cisco-validate restconf-get \
   --path Cisco-IOS-XE-interfaces-oper:interfaces
 ```
 
-Capture a normalized live baseline containing hostname, IOS XE version, and
-operational interface state:
+Capture a normalized live baseline containing hostname, IOS XE version,
+operational interface state, and routing state:
 
 ```bash
 mkdir -p reports/live
@@ -107,7 +107,15 @@ snapshot model, including:
 - `admin-status` → `admin_up`;
 - `oper-status` → `oper_up`;
 - IPv4 address + subnet mask → CIDR notation;
-- empty or `0.0.0.0` addressing → no configured IPv4 address.
+- empty or `0.0.0.0` addressing → no configured IPv4 address;
+- IETF RIB entries → prefix, next hop, and normalized source protocol;
+- receive/direct routes without a usable gateway → `next_hop: null`.
+
+The live routing collector uses:
+
+```text
+ietf-routing:routing-state/routing-instance
+```
 
 ## Offline validation
 
@@ -155,8 +163,8 @@ These offline paths are deliberately separate from device collection so validati
 - [x] generic RESTCONF GET support
 - [x] hostname/version smoke test
 - [x] normalize real interface state
-- [ ] normalize real routing state
-- [x] save live interface baseline snapshots
+- [x] normalize real routing state
+- [x] save live interface and routing baseline snapshots
 
 ### 3. Controlled change workflow
 
