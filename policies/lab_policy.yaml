@@ -1,0 +1,13 @@
+hostname: cat8kv-lab
+interfaces:
+  - name: GigabitEthernet1
+    admin_up: true
+    oper_up: true
+  - name: Loopback100
+    admin_up: true
+    oper_up: true
+    ipv4: 192.0.2.100/32
+routes:
+  - prefix: 0.0.0.0/0
+    present: true
+    next_hop: 10.10.20.254
