@@ -340,6 +340,10 @@ pytest
 
 GitHub Actions runs the test suite on Python 3.11 and 3.12. Live DevNet AEtest execution is intentionally separate because the hosted runner has neither the private reservation route nor its credentials.
 
+## Portfolio roadmap
+
+See [docs/PORTFOLIO_ROADMAP.md](docs/PORTFOLIO_ROADMAP.md) for the next implementation milestones: multi-device validation, configuration compliance, broader routing/switching checks, and a fuller change-plan/evidence workflow.
+
 ## Security
 
 Never commit:
