@@ -1,0 +1,27 @@
+{
+  "hostname": "cat8kv-lab",
+  "interfaces": [
+    {
+      "name": "GigabitEthernet1",
+      "admin_up": true,
+      "oper_up": true,
+      "ipv4": "10.10.20.48/24",
+      "description": "DevNet management"
+    },
+    {
+      "name": "Loopback100",
+      "admin_up": true,
+      "oper_up": true,
+      "ipv4": "192.0.2.100/32",
+      "description": "portfolio-validation"
+    }
+  ],
+  "routes": [
+    {
+      "prefix": "0.0.0.0/0",
+      "next_hop": "10.10.20.254",
+      "protocol": "static"
+    }
+  ],
+  "metadata": {"source": "synthetic-test-fixture"}
+}

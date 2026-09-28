@@ -1,0 +1,23 @@
+hostname: cat8000v
+interfaces:
+  - name: GigabitEthernet1
+    admin_up: true
+    oper_up: true
+    ipv4: 10.10.20.48/24
+    description: "MANAGEMENT INTERFACE - DON'T TOUCH ME"
+  - name: Loopback250
+    admin_up: true
+    oper_up: true
+    ipv4: 192.0.2.250/32
+    description: portfolio-change-validation
+routes:
+  - prefix: 0.0.0.0/0
+    present: true
+    next_hop: 10.10.20.254
+    protocol: static
+  - prefix: 10.10.20.0/24
+    present: true
+    protocol: direct
+  - prefix: 192.0.2.250/32
+    present: true
+    protocol: direct

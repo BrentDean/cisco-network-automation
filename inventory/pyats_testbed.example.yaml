@@ -1,0 +1,18 @@
+testbed:
+  name: devnet-cat8000v
+  credentials:
+    default:
+      username: "%ENV{PYATS_USERNAME}"
+      password: "%ENV{PYATS_PASSWORD}"
+
+devices:
+  cat8000v:
+    alias: uut
+    os: iosxe
+    type: router
+    platform: cat8kv
+    connections:
+      cli:
+        protocol: ssh
+        ip: 10.10.20.48
+        port: 22
