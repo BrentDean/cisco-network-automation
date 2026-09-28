@@ -253,7 +253,7 @@ pyats validate testbed inventory/pyats_testbed.example.yaml
 - [x] live pyATS/Unicon SSH connection
 - [x] Genie `show ip interface brief` parsing
 - [x] three-way interface-state cross-check across RESTCONF, NETCONF, and pyATS/Genie
-- [ ] reusable change-validation test cases
+- [x] reusable pyATS AEtest validation job
 
 The three-way comparison deliberately uses only fields all three sources expose
 consistently: interface name, administrative state, operational state, and IPv4
@@ -263,6 +263,21 @@ address.
 cisco-validate pyats-interface --name GigabitEthernet1
 cisco-validate cross-check-interface-three-way --name GigabitEthernet1
 ```
+
+A reusable AEtest job turns the same checks into native pyATS PASS/FAIL
+sections and always disconnects the CLI session during cleanup.
+
+```bash
+export CISCO_VALIDATION_INTERFACE=GigabitEthernet1
+export CISCO_VALIDATION_IPV4=10.10.20.48
+
+pyats run job jobs/interface_validation_job.py \
+  --testbed-file inventory/pyats_testbed.example.yaml
+```
+
+The job validates the expected interface state from Genie, then independently
+collects the same interface through NETCONF and RESTCONF and fails if the three
+normalized views disagree.
 
 ## Security
 
