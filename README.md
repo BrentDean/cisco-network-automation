@@ -6,9 +6,9 @@ Python automation for **Cisco IOS XE state validation, drift detection, guarded 
 
 The project uses live Cisco DevNet Catalyst 8000V devices and deliberately separates safe read-only collection from explicitly enabled configuration changes.
 
-## Recruiter / hiring manager snapshot
+## Capabilities demonstrated
 
-This repository is intended to provide concrete evidence of Cisco network-engineering and automation capability rather than a collection of one-off scripts.
+This project demonstrates Cisco network-engineering and automation capability through live device interaction, structured validation, controlled changes, and reproducible test evidence.
 
 | Capability | Evidence in this repository |
 | --- | --- |
@@ -23,7 +23,7 @@ This repository is intended to provide concrete evidence of Cisco network-engine
 | CI/CD practices | GitHub Actions across supported Python versions |
 | Security hygiene | Environment-backed credentials and secure verification defaults |
 
-A reviewer should be able to see both **Cisco CLI/networking knowledge** and the ability to move beyond manual administration into **repeatable, testable network automation**.
+The implementation combines **Cisco CLI/networking knowledge** with **repeatable, testable network automation**.
 
 
 ## What this project demonstrates
@@ -340,9 +340,9 @@ pytest
 
 GitHub Actions runs the test suite on Python 3.11 and 3.12. Live DevNet AEtest execution is intentionally separate because the hosted runner has neither the private reservation route nor its credentials.
 
-## Portfolio roadmap
+## Project roadmap
 
-See [docs/PORTFOLIO_ROADMAP.md](docs/PORTFOLIO_ROADMAP.md) for the next implementation milestones: multi-device validation, configuration compliance, broader routing/switching checks, and a fuller change-plan/evidence workflow.
+See [docs/PROJECT_ROADMAP.md](docs/PROJECT_ROADMAP.md) for the next implementation milestones: multi-device validation, configuration compliance, broader routing/switching checks, and a fuller change-plan/evidence workflow.
 
 ## Security
 
