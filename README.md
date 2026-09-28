@@ -6,6 +6,26 @@ Python automation for **Cisco IOS XE state validation, drift detection, guarded 
 
 The project uses live Cisco DevNet Catalyst 8000V devices and deliberately separates safe read-only collection from explicitly enabled configuration changes.
 
+## Recruiter / hiring manager snapshot
+
+This repository is intended to provide concrete evidence of Cisco network-engineering and automation capability rather than a collection of one-off scripts.
+
+| Capability | Evidence in this repository |
+| --- | --- |
+| Cisco IOS XE operations | Live Catalyst 8000V collection and validation |
+| Network programmability | RESTCONF, NETCONF, YANG, structured JSON/XML |
+| Cisco automation tooling | pyATS, Genie, Unicon, AEtest |
+| Network-state reasoning | Interfaces, IPv4 addressing, routing state, default-route validation |
+| Change control | Pre-checks, explicit write opt-in, scoped changes, read-after-write verification |
+| Troubleshooting / verification | Cross-protocol comparisons and negative tests |
+| Rollback discipline | Verified rollback and zero-diff comparison to the original baseline |
+| Python engineering | Package structure, CLI, normalized models, unit tests, linting |
+| CI/CD practices | GitHub Actions across supported Python versions |
+| Security hygiene | Environment-backed credentials and secure verification defaults |
+
+A reviewer should be able to see both **Cisco CLI/networking knowledge** and the ability to move beyond manual administration into **repeatable, testable network automation**.
+
+
 ## What this project demonstrates
 
 - **RESTCONF/YANG** collection of hostname, IOS XE version, interfaces, and routing state.
