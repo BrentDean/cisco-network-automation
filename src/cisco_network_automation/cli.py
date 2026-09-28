@@ -11,11 +11,14 @@ from .collectors import capture_device_snapshot, normalize_interfaces_oper
 from .diff import semantic_diff
 from .io import load_policy, load_snapshot, write_json
 from .netconf import NetconfClient, NetconfSettings
+from .pyats_client import PyatsClient, common_from_model
 from .reporting import build_validation_report
 from .restconf import RestconfClient, RestconfSettings
 from .validation import validate_snapshot
 
 CROSS_CHECK_INTERFACE = "GigabitEthernet1"
+DEFAULT_PYATS_TESTBED = Path("inventory/pyats_testbed.example.yaml")
+DEFAULT_PYATS_DEVICE = "cat8000v"
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -59,6 +62,18 @@ def build_parser() -> argparse.ArgumentParser:
     cross_check_interface.add_argument("--name", default=CROSS_CHECK_INTERFACE)
     cross_check_interface.add_argument("--output", type=Path)
 
+    pyats_interface = commands.add_parser("pyats-interface")
+    pyats_interface.add_argument("--name", default=CROSS_CHECK_INTERFACE)
+    pyats_interface.add_argument("--device", default=DEFAULT_PYATS_DEVICE)
+    pyats_interface.add_argument("--testbed", type=Path, default=DEFAULT_PYATS_TESTBED)
+    pyats_interface.add_argument("--output", type=Path)
+
+    three_way = commands.add_parser("cross-check-interface-three-way")
+    three_way.add_argument("--name", default=CROSS_CHECK_INTERFACE)
+    three_way.add_argument("--device", default=DEFAULT_PYATS_DEVICE)
+    three_way.add_argument("--testbed", type=Path, default=DEFAULT_PYATS_TESTBED)
+    three_way.add_argument("--output", type=Path)
+
     commands.add_parser("restconf-create-demo-loopback")
     commands.add_parser("restconf-delete-demo-loopback")
     return parser
@@ -98,6 +113,38 @@ def main(argv: list[str] | None = None) -> int:
             write_json(args.output, report)
         print(json.dumps(report, indent=2))
         return 0
+
+    if args.command in {"pyats-interface", "cross-check-interface-three-way"}:
+        pyats = PyatsClient(args.testbed)
+        pyats_state = pyats.get_interface_state(args.device, args.name)
+
+        if args.command == "pyats-interface":
+            report = {"protocol": "pyats-genie", "interface": pyats_state.to_dict()}
+        else:
+            netconf = NetconfClient(NetconfSettings.from_env())
+            restconf = RestconfClient(RestconfSettings.from_env())
+            netconf_state = common_from_model(netconf.get_interface_state(args.name))
+            restconf_state = common_from_model(_restconf_interface(restconf, args.name))
+            matches = pyats_state == netconf_state == restconf_state
+            report = {
+                "result": "PASS" if matches else "FAIL",
+                "interface": args.name,
+                "pyats_genie": pyats_state.to_dict(),
+                "netconf": netconf_state.to_dict(),
+                "restconf": restconf_state.to_dict(),
+                "match": matches,
+                "compared_fields": [
+                    "name",
+                    "admin_up",
+                    "oper_up",
+                    "ipv4_address",
+                ],
+            }
+
+        if args.output:
+            write_json(args.output, report)
+        print(json.dumps(report, indent=2))
+        return 0 if report.get("result", "PASS") == "PASS" else 1
 
     netconf_commands = {
         "netconf-hello",

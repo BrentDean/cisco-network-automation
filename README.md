@@ -250,9 +250,19 @@ pyats validate testbed inventory/pyats_testbed.example.yaml
 ```
 
 - [x] public-safe pyATS testbed definition
-- [ ] live pyATS/Unicon SSH connection
-- [ ] Genie operational-state parsing
+- [x] live pyATS/Unicon SSH connection
+- [x] Genie `show ip interface brief` parsing
+- [x] three-way interface-state cross-check across RESTCONF, NETCONF, and pyATS/Genie
 - [ ] reusable change-validation test cases
+
+The three-way comparison deliberately uses only fields all three sources expose
+consistently: interface name, administrative state, operational state, and IPv4
+address.
+
+```bash
+cisco-validate pyats-interface --name GigabitEthernet1
+cisco-validate cross-check-interface-three-way --name GigabitEthernet1
+```
 
 ## Security
 
